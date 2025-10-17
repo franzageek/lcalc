@@ -2,6 +2,7 @@
 
 #include <intdef.h>
 #include <colors.h>
+#include <evec.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -154,6 +155,7 @@ term_t* parse_term(char* expr, u16* index)
 
 term_t* parse(char* expr)
 {
+    evec_t* evec = evec__new(sizeof(term_t));
     u16 i = 0;
     while (expr[i] != '\0')
     {
@@ -161,9 +163,15 @@ term_t* parse(char* expr)
         if (!t)
             return NULL;
         
-        term__print(t, 0); // [ ] temporary setup, do stable
-        term__free(t);
-        printf("---------\n");
+        evec__push(evec, t); // [x] temporary setup, do stable
+        term__print_raw(t, 0);
+        printf("--\n");
+        free(t); // copy term to evec, preserve children, free term
     }
-    return NULL;
+    term_t null = {0};
+    evec__push(evec, &null); // push null term to evec
+    term_t* t = (term_t*)evec->data;
+    free(evec); // drop evec, keep NULL-terminated term array
+    printf(C_RGB_FG(0, 100, 200)"<end of parsing phase>"C_RESET"\n");
+    return t;
 }

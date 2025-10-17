@@ -4,12 +4,39 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+void term__print_raw(term_t* term, u16 level)
+{
+    level *= 2;
+    u16 i = 0;
+    for (i = level; i > 0; --i)
+        putc(' ', stdout);
+    printf(C_BOLD"type: "C_RESET C_BG_BWHITE C_BLACK"%s"C_RESET C_BBLACK" (0x%02X)\n"C_RESET, str_term_type(term->type), term->type);
+    for (i = level; i > 0; --i)
+        putc(' ', stdout);
+    printf(C_BOLD"variable: "C_RESET C_BBLACK"%c"C_RESET" / "C_BBLACK"0x%02X"C_RESET"\n", term->variable, term->variable);
+    for (i = level; i > 0; --i)
+        putc(' ', stdout);
+    printf(C_BOLD"abstraction: "C_RESET C_BBLACK"%c"C_RESET" / "C_BBLACK"0x%02X"C_RESET" -> "C_BBLACK"%p"C_RESET"\n", term->abstraction.param, term->abstraction.param, (void*)term->abstraction.body);
+    for (i = level; i > 0; --i)
+        putc(' ', stdout);
+    printf(C_BOLD"application: "C_RESET C_BBLACK"%p"C_RESET" -> "C_BBLACK"%p"C_RESET"\n", (void*)term->application.funct, (void*)term->application.arg);
+    return;
+}
+
 void term__print(term_t* term, u16 level)
 {
     level *= 2;
     u16 i = 0;
     switch (term->type)
     {
+        case null:
+        {
+            for (i = level; i > 0; --i)
+                putc(' ', stdout);
+            printf(C_BOLD"type: "C_RESET C_BG_BBLACK"%s"C_RESET"\n", str_term_type(null));
+            return;
+        }
+
         case variable:
         {
             for (i = level; i > 0; --i)
@@ -56,20 +83,17 @@ void term__print(term_t* term, u16 level)
     }
 }
 
-void term__free(term_t* term)
+void term__free_sub(term_t* term)
 {
     switch (term->type)
     {
+        case null:
         case variable:
-        {
-            free(term);
             return;
-        }
 
         case abstraction:
         {
             term__free(term->abstraction.body);
-            free(term);
             return;
         }
 
@@ -77,8 +101,14 @@ void term__free(term_t* term)
         {
             term__free(term->application.funct);
             term__free(term->application.arg);
-            free(term);
             return;
         }
     }
+}
+
+void term__free(term_t* term)
+{
+    term__free_sub(term);
+    free(term);
+    return;
 }

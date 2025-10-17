@@ -22,12 +22,19 @@ int main(/*int argc, char** argv*/)
 
         printf("> %s\n", line);
         linenoiseHistoryAdd(line);
-        /*term_t* t =*/ parse(line);
-        /*if (t)
+        term_t* t = parse(line);
+        term_t* a = t;
+        if (t) 
         {
-            print_term(t, 0);
-            free(t);
-        }*/
+            do
+            {
+                term__print(a, 0);
+                term__free_sub(a); // free any children this term may have, preserve term array (will be freed later with free())
+                printf("--\n");
+            }
+            while (a->type != null);
+        }
+        free(t);
         linenoiseFree(line);
     }
     return 0;

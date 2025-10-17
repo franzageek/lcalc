@@ -5,12 +5,13 @@
 
 typedef enum term_type
 {
-    variable = 0,
-    abstraction = 1,
-    application = 2
+    null = 0,
+    variable = 1,
+    abstraction = 2,
+    application = 3
 } term_type;
 
-#define str_term_type(a) a == 0 ? "type::variable" : a == 1 ? "type::abstraction" : "type::application"
+#define str_term_type(a) a == 0 ? " null " : a == 1 ? " variable " : a == 2 ? " abstraction " : " application "
 
 typedef struct term_t
 {
@@ -32,6 +33,8 @@ typedef struct term_t
 } term_t;
 
 void term__print(term_t* term, u16 level);
+void term__print_raw(term_t* term, u16 level);
 void term__free(term_t* term);
+void term__free_sub(term_t* term);
 
 #endif //TERM.H
