@@ -14,14 +14,15 @@ int main(/*int argc, char** argv*/)
     while (true)
     {
         char* line = linenoise("["C_GREEN"λ"C_RESET"] >>> ");
+        //& char* line = "(((\\x.\\y.\\z.\\x.\\y.\\z.x \\x.\\y.\\z.x) \\x.\\y.x) ())";
         if (line[0] == '\0')
             continue;
         
         if (strcmp(line, "quit") == 0)
             return 0;
 
-        printf("> %s\n", line);
         linenoiseHistoryAdd(line);
+        printf("\n> %s\n", line);
         term_t* t = parse(line);
         term_t* a = t;
         if (t) 
@@ -31,10 +32,12 @@ int main(/*int argc, char** argv*/)
                 term__print(a, 0);
                 term__free_sub(a); // free any children this term may have, preserve term array (will be freed later with free())
                 printf("--\n");
+                ++a;
             }
             while (a->type != null);
+            free(t);
         }
-        free(t);
+        putc('\n', stdout);
         linenoiseFree(line);
     }
     return 0;
