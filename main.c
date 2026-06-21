@@ -1,4 +1,5 @@
 #include "src/parse.h"
+#include "src/reduction.h"
 
 #include <stdio.h>
 #include <intdef.h>
@@ -30,11 +31,18 @@ int main(/*int argc, char** argv*/)
             do
             {
                 term__print(a, 0);
-                term__free_sub(a); // free any children this term may have, preserve term array (will be freed later with free())
                 printf("--\n");
                 ++a;
             }
             while (a->type != null);
+            printf("\n\n\n");
+            beta_reduce(t);
+            a = t;
+            while (a->type != null)
+            {
+                term__free_sub(a);
+                ++a;
+            }
             free(t);
         }
         putc('\n', stdout);

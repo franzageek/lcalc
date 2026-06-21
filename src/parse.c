@@ -158,6 +158,10 @@ term_t* parse(char* expr)
         term_t* t = parse_term(expr, &i);
         if (!t)
         {
+            u16 u = 0;
+            while (u < evec->size)
+                term__free_sub(((term_t*)evec__at(evec, u))); // free all subterms of each term inside the evec
+
             evec__free(evec);
             return NULL;
         }
@@ -167,8 +171,8 @@ term_t* parse(char* expr)
         //printf("--\n");
         free(t); // copy term to evec, preserve children, free term
     }
-    term_t null = {0};
-    evec__push(evec, &null); // push null term to evec
+    term_t n = {0};
+    evec__push(evec, &n); // push null term to evec
     term_t* t = (term_t*)evec->data;
     free(evec); // drop evec, keep NULL-terminated term array
     printf(C_RGB_FG(0, 100, 200)"<end of parsing phase>"C_RESET"\n");
