@@ -131,7 +131,7 @@ void* evec__at(evec_t* evec, u16 index)
 {
     if (evec->valid)
     {
-        if (index < evec->item_size)
+        if (index < evec->size)
             return (void*)&evec->data[index * evec->item_size];
         
         else
