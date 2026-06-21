@@ -3,6 +3,6 @@
 
 #include "term.h"
 
-term_t* beta_reduce(term_t* terms);
+void beta_reduce(term_t* terms);
 
 #endif

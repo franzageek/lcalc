@@ -61,9 +61,9 @@ bool substitute(term_t* term)
             term_t* val = replace_param(term->application.funct->abstraction.param, term->application.funct, term->application.arg);    
             if (val->type != null)
             {
-                term__free_sub(term->application.funct);
                 memmove(term, val->abstraction.body, sizeof(term_t));
-                
+                term__free(val); // like this it DOESNT LEAK, but when freeing "val" while its *body is pointing at a term that has subterms, those subterms are freed too, therefore the newly copied term has dead pointers
+                // %p
                 return true;
             }
         }
@@ -71,12 +71,12 @@ bool substitute(term_t* term)
     return false;
 }
 
-term_t* beta_reduce(term_t* terms)
+void beta_reduce(term_t* terms)
 {
     if (!terms)
-        return NULL;
+        return;
 
-    evec_t* evec = evec__new(sizeof(term_t));    
+    //evec_t* evec = evec__new(sizeof(term_t));    
     term_t* t = terms;
     while (t->type != null)
     {
@@ -87,13 +87,13 @@ term_t* beta_reduce(term_t* terms)
                 term__print(t, 0);
             }
         }
-        evec__push(evec, t);
+        //evec__push(evec, t);
         ++t;
     }
-    term_t n = {0};
+    /*term_t n = {0};
     evec__push(evec, &n);
     term_t* r = (term_t*)evec->data;
-    free(evec);
+    free(evec);*/
     printf(C_RGB_FG(0, 100, 200)"<end of beta-reduction>"C_RESET"\n");
-    return r;
+    return /*r*/;
 }
