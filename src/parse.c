@@ -7,6 +7,18 @@
 #include <stdlib.h>
 #include <string.h>
 
+void print_syntax_error(u16 index)
+{
+    while (index)
+    {
+        fprintf(stderr, " ");
+        --index;
+    }
+    fprintf(stderr, C_BRED"  ^"C_RESET"\n");
+    fprintf(stderr, C_BRED"syntax error"C_RESET": ");
+    return;
+}
+
 term_t* parse_term(char* expr, u16* index)
 {
     if (!expr)
@@ -21,41 +33,23 @@ term_t* parse_term(char* expr, u16* index)
                 ++*index;
                 if (expr[*index] < 'a' || expr[*index] > 'z')
                 {
-                    fprintf(stderr, C_BRED"syntax error"C_RESET": invalid parameter name: \'%c\'\n", expr[*index]);
-                    fprintf(stderr, "> %s\n  ", expr);
-                    while (*index)
-                    {
-                        fprintf(stderr, " ");
-                        --*index;
-                    }
-                    fprintf(stderr, C_BRED"^"C_RESET"\n");
+                    print_syntax_error(*index);
+                    fprintf(stderr, "invalid parameter name: \'%c\'\n", expr[*index]);
                     return NULL;
                 }
                 char param = expr[*index];
                 ++*index;
                 if (expr[*index] != '.')
                 {
-                    fprintf(stderr, C_BRED"syntax error"C_RESET": \'.\' expected\n");
-                    fprintf(stderr, "> %s\n  ", expr);
-                    while (*index)
-                    {
-                        fprintf(stderr, " ");
-                        --*index;
-                    }
-                    fprintf(stderr, C_BRED"^"C_RESET"\n");
+                    print_syntax_error(*index);
+                    fprintf(stderr, "\'.\' expected\n");
                     return NULL;
                 }
                 ++*index;
                 if (expr[*index] == '\0' || expr[*index] == ' ')
                 {
-                    fprintf(stderr, C_BRED"syntax error"C_RESET": function body expected\n");
-                    fprintf(stderr, "> %s\n  ", expr);
-                    while (*index)
-                    {
-                        fprintf(stderr, " ");
-                        --*index;
-                    }
-                    fprintf(stderr, C_BRED"^"C_RESET"\n");
+                    print_syntax_error(*index);
+                    fprintf(stderr, "function body expected\n");
                     return NULL;
                 }
                 term_t* body = parse_term(expr, index);
@@ -64,13 +58,14 @@ term_t* parse_term(char* expr, u16* index)
 
                 term_t* term = malloc(sizeof(term_t));
                 if (!term)
+                {
+                    term__free(body);
                     return NULL;
+                }
 
                 term->type = abstraction;
                 term->abstraction.param = param;
                 term->abstraction.body = body;
-                if (!term)
-                    return NULL;
 
                 return term;
             }
@@ -82,39 +77,45 @@ term_t* parse_term(char* expr, u16* index)
                 if (!funct)
                     return NULL;
                 
+                if (expr[*index] == '\0')
+                {
+                    print_syntax_error(*index);
+                    fprintf(stderr, "incomplete expression (NUL reached)\n");
+                    term__free(funct);
+                    return NULL;
+                }
+
                 if (expr[*index] != ' ')
                 {
-                    fprintf(stderr, C_BRED"syntax error"C_RESET": space expected between function and argument(s)\n");
-                    fprintf(stderr, "> %s\n  ", expr);
-                    while (*index)
-                    {
-                        fprintf(stderr, " ");
-                        --*index;
-                    }
-                    fprintf(stderr, C_BRED"^"C_RESET"\n");
+                    print_syntax_error(*index);
+                    fprintf(stderr, "space expected between function and argument(s)\n");
+                    term__free(funct);
                     return NULL;
                 }
                 ++*index;
                 term_t* arg = parse_term(expr, index);
                 if (!arg)
+                {
+                    term__free(funct);
                     return NULL;
+                }
 
                 if (expr[*index] != ')')
                 {
-                    fprintf(stderr, C_BRED"syntax error"C_RESET": \')\' expected\n");
-                    fprintf(stderr, "> %s\n  ", expr);
-                    while (*index)
-                    {
-                        fprintf(stderr, " ");
-                        --*index;
-                    }
-                    fprintf(stderr, C_BRED"^"C_RESET"\n");
+                    print_syntax_error(*index);
+                    fprintf(stderr, "\')\' expected\n");
+                    term__free(funct);
+                    term__free(arg);
                     return NULL;
                 }
                 ++*index;
-                term_t* term = malloc(sizeof(term_t));
+                term_t* term = calloc(1, sizeof(term_t));
                 if (!term)
+                {
+                    term__free(funct);
+                    term__free(arg);
                     return NULL;
+                }
 
                 term->type = application;
                 term->application.funct = funct;
@@ -125,7 +126,7 @@ term_t* parse_term(char* expr, u16* index)
             {
                 if (expr[*index] >= 'a' && expr[*index] <= 'z')
                 {
-                    term_t* term = malloc(sizeof(term_t));
+                    term_t* term = calloc(1, sizeof(term_t));
                     if (!term)
                         return NULL;
 
@@ -136,20 +137,15 @@ term_t* parse_term(char* expr, u16* index)
                 }
                 else if (expr[*index] != ' ') 
                 {
-                    fprintf(stderr, C_BRED"syntax error"C_RESET": unknown template\n");
-                    fprintf(stderr, "> %s\n  ", expr);
-                    while (*index)
-                    {
-                        fprintf(stderr, " ");
-                        --*index;
-                    }
-                    fprintf(stderr, C_BRED"^"C_RESET"\n");
+                    print_syntax_error(*index);
+                    fprintf(stderr, "unknown template\n");
                     return NULL;
                 }
             }
         }
-        ++*index;
     }
+    print_syntax_error(*index);
+    fprintf(stderr, "incomplete expression (NUL reached)\n");
     return NULL;
 }
 
@@ -161,11 +157,14 @@ term_t* parse(char* expr)
     {
         term_t* t = parse_term(expr, &i);
         if (!t)
+        {
+            evec__free(evec);
             return NULL;
+        }
         
         evec__push(evec, t); // [x] temporary setup, do stable
-        term__print_raw(t, 0);
-        printf("--\n");
+        //term__print_raw(t, 0);
+        //printf("--\n");
         free(t); // copy term to evec, preserve children, free term
     }
     term_t null = {0};
