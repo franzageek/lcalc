@@ -116,9 +116,9 @@ bool substitute(term_t* term)
     }
 }
 
-bool beta_reduce(term_t* terms)
+bool beta_reduce(term_t* terms, bool verbose)
 {
-    printf(C_RGB_FG(0, 100, 200)"<start of beta-reduction>"C_RESET"\n");
+    if (verbose) printf(C_RGB_FG(0, 100, 200)"<start of beta-reduction>"C_RESET"\n");
     bool reduction = false;
     if (!terms)
         return reduction;
@@ -129,10 +129,10 @@ bool beta_reduce(term_t* terms)
         if (substitute(t))
         {
             reduction = true;
-            term__print(t, 0);
+            if (verbose) term__print(t, 0);
         }
         ++t;
     }
-    printf(C_RGB_FG(0, 100, 200)"<end of beta-reduction>"C_RESET"\n");
+    if (verbose) printf(C_RGB_FG(0, 100, 200)"<end of beta-reduction>"C_RESET"\n");
     return reduction;
 }

@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <linenoise.h>
+#include <evec.h>
 
 int main(/*int argc, char** argv*/)
 {
@@ -41,16 +42,66 @@ int main(/*int argc, char** argv*/)
                 ++a;
             }
             while (a->type != null);
-            if (beta_reduce(t))
-                printf("expression was reduced\n");
 
+            while (beta_reduce(t, false))
+            {
+
+                /*if (beta_reduce(t, true))
+                    printf("expression was reduced\n");*/ // this is for single step beta-reduction
+    
+
+                /* all that follows is needed to merge each one of the resulting terms
+                 * into a single NULL-terminated string of lambda terms.
+                 */
+
+                a = t;
+                evec_t* strs = evec__new(sizeof(char*));           
+                printf("-->");
+                while (a->type != null)
+                {
+                    char* str = term__to_string(a);
+                    printf(" %s", str);
+                    evec__push(strs, &str);
+                    ++a;
+                }
+                printf("\n");
+    
+                size_t exprlen = 0;
+    
+                u = 0;
+                while (u < strs->size)
+                {
+                    exprlen += strlen(*((char**)evec__at(strs, u++)));
+                    exprlen += 1; // for spaces and NULL terminator 
+                }
+                exprlen += 2; //some breathing room for the last term to be written
+    
+                char* expr = calloc(exprlen, sizeof(char));
+                if (!expr)
+                {
+                    perror("calloc:");
+                    exit(1);
+                
+                }
+                exprlen -= 2; // we'll pretend we have got the same space as before, but in case strcat() needs those extra bytes (for spaces or N-Ts) they are there
+    
+                u = 0;
+                while (u < strs->size)
+                {
+                    strcat(expr, *((char**)evec__at(strs, u)));
+                    free(*((char**)evec__at(strs, u++)));
+                    strcat(expr, " ");
+                }
+                expr[exprlen-1] = '\0'; // set the N-T where we expect it to be
+                
+                printf("-*> %s\n", expr);
+                linenoiseHistoryAdd(expr);
+                evec__free(strs);
+                free(expr);
+            }
             a = t;
             while (a->type != null)
             {
-                char* str = term__to_string(a);
-                linenoiseHistoryAdd(str);
-                printf("--> %s\n", str);
-                free(str);
                 term__free_sub(a);
                 ++a;
             }

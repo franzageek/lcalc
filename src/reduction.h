@@ -3,6 +3,6 @@
 
 #include "term.h"
 
-bool beta_reduce(term_t* terms);
+bool beta_reduce(term_t* terms, bool verbose);
 
 #endif
