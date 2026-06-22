@@ -85,26 +85,35 @@ term_t* replace_param(char param, term_t* term, term_t* repl)
 
 bool substitute(term_t* term)
 {
-    if (term->type == application)
+    switch (term->type)
     {
-        if (term->application.funct->type == abstraction)
+        case abstraction:
+            return substitute(term->abstraction.body);
+        
+        case application:
         {
-            term_t* val = term->application.funct;
-            if (replace_param(term->application.funct->abstraction.param, term->application.funct, term->application.arg) == NULL)
-                term__free(term->application.arg);
+            bool reduction = false;
+            if (term->application.funct->type == abstraction)
+            {
+                term_t* val = term->application.funct;
+                if (replace_param(term->application.funct->abstraction.param, term->application.funct, term->application.arg) == NULL)
+                    term__free(term->application.arg);
 
-            memmove(term, term->application.funct->abstraction.body, sizeof(term_t));
-            memset(val->abstraction.body, 0, sizeof(term_t));
-            //unhook_subterms(val->abstraction.body);
-            term__free(val); //[x] fixed leak and memory layout
-            return true;
+                memmove(term, term->application.funct->abstraction.body, sizeof(term_t));
+                memset(val->abstraction.body, 0, sizeof(term_t));
+                term__free(val); //[x] fixed leak and memory layout
+                return true;
+            } 
+            else
+                reduction |= substitute(term->application.funct);
+
+            reduction |= substitute(term->application.arg); 
+            return reduction;
         }
-        else if (term->application.funct->type == application)
-        {
-            return substitute(term->application.funct);
-        }
+
+        default:
+            return false;
     }
-    return false;
 }
 
 bool beta_reduce(term_t* terms)
