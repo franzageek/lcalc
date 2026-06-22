@@ -36,13 +36,17 @@ int main(/*int argc, char** argv*/)
         term_t* a = t;
         if (t) 
         {
+            printf(C_RGB_FG(0, 100, 200)"<start of tree-based expression analysis>\n"C_RESET);
             do
             {
                 term__print(a, 0);
                 ++a;
             }
             while (a->type != null);
+            printf(C_RGB_FG(0, 100, 200)"<end of tree-based expression analysis>\n\n"C_RESET);
 
+            printf(C_RGB_FG(0, 100, 200)"<start of beta-reduction>"C_RESET"\n");
+            char* expr = NULL;
             while (beta_reduce(t, false))
             {
 
@@ -53,6 +57,9 @@ int main(/*int argc, char** argv*/)
                 /* all that follows is needed to merge each one of the resulting terms
                  * into a single NULL-terminated string of lambda terms.
                  */
+
+                if (expr)
+                    free(expr);
 
                 a = t;
                 evec_t* strs = evec__new(sizeof(char*));           
@@ -76,7 +83,7 @@ int main(/*int argc, char** argv*/)
                 }
                 exprlen += 2; //some breathing room for the last term to be written
     
-                char* expr = calloc(exprlen, sizeof(char));
+                expr = calloc(exprlen, sizeof(char));
                 if (!expr)
                 {
                     perror("calloc:");
@@ -94,9 +101,21 @@ int main(/*int argc, char** argv*/)
                 }
                 expr[exprlen-1] = '\0'; // set the N-T where we expect it to be
                 
+                printf("+-> %s\n", expr);
+                evec__free(strs);
+            }
+            if (!expr)
+                printf("the expression has already been reduced to normal form\n");
+
+            printf(C_RGB_FG(0, 100, 200)"<end of beta-reduction>"C_RESET"\n");
+
+            if (!expr)
+                printf("-*> %s\n", line);
+ 
+            else
+            {
                 printf("-*> %s\n", expr);
                 linenoiseHistoryAdd(expr);
-                evec__free(strs);
                 free(expr);
             }
             a = t;
