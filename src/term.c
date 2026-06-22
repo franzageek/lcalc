@@ -3,6 +3,21 @@
 #include <colors.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+
+//const term_t* _nt;
+
+/*bool init_nullterm(void)
+{
+    _nt = calloc(1, sizeof(term_t));
+    if (!_nt)
+    {
+        perror("calloc:");
+        return false;
+    }
+
+    return true;
+}*/
 
 void term__print_raw(term_t* term, u16 level)
 {
@@ -31,7 +46,7 @@ void print_spaces(u16 level, bool print_number)
 
     if (print_number)
         printf(C_BBLACK"%02d "C_RESET, level/2);
-        
+
     return;
 }
 
@@ -85,8 +100,54 @@ void term__print(term_t* term, u16 level)
     }
 }
 
+char* term__to_string(term_t* term)
+{
+    switch (term->type)
+    {
+        case null:
+        {
+            return strdup("<nul>");
+        }
+
+        case variable:
+        {
+            char str[2] = {0};
+            sprintf(str, "%c", term->variable);
+            return strdup(str);
+        }
+
+        case abstraction:
+        {
+            char* body = term__to_string(term->abstraction.body);
+            size_t strsize = strlen("\\x.") + strlen(body);
+            char* str = calloc(strsize+1, sizeof(char));
+            sprintf(str, "\\%c.%s", term->abstraction.param, body);
+            free(body);
+            return str;
+        }
+
+        case application:
+        {
+            char* funct = term__to_string(term->application.funct);
+            char* arg = term__to_string(term->application.arg);
+            size_t strsize = strlen("( )") + strlen(funct) + strlen(arg);
+            char* str = calloc(strsize+1, sizeof(char));
+            sprintf(str, "(%s %s)", funct, arg);
+            free(funct);
+            free(arg);
+            return str;
+        }
+
+        default:
+            return NULL;
+    }
+}
+
 void term__free_sub(term_t* term)
 {
+    if (!term)
+        return;
+
     switch (term->type)
     {
         case null:
@@ -111,6 +172,8 @@ void term__free_sub(term_t* term)
 void term__free(term_t* term)
 {
     term__free_sub(term);
+    //if (term != nullterm)
     free(term);
+        
     return;
 }
