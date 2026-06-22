@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <colors.h>
 #include <evec.h>
+#include <string.h>
 
 
 /*
@@ -11,6 +12,32 @@
 [ ] beta reduction - for each application, take the argument and replace it with every occurrence of the bound variable
 
 */
+
+/*void unhook_subterms(term_t* term)
+{
+    switch (term->type)
+    {
+        case null:
+        case variable:
+            return;
+        
+        case abstraction:
+        {
+            term->abstraction.body = nullterm;
+            return;
+        }
+
+        case application:
+        {
+            term->application.funct = nullterm;
+            term->application.arg = nullterm;
+        } 
+        
+        default:
+            return;
+    }
+    return;
+}*/
 
 term_t* replace_param(char param, term_t* term, term_t* repl)
 {
@@ -32,13 +59,17 @@ term_t* replace_param(char param, term_t* term, term_t* repl)
             term_t* val = replace_param(param, term->abstraction.body, repl);
             if (val == repl)
             {
-                free(term->abstraction.body);
+                free(term->abstraction.body); //it is a variable
                 term->abstraction.body = repl;
                 return term;
             }
             if (val == term->abstraction.body)
             {
-                /*if (term->abstraction.param == param)
+                /*if (repl == val->abstraction.body)
+                {
+
+                }*/
+                    /*if (term->abstraction.param == param)
                     return term->abstraction.body;*/
              
                 return term;
@@ -58,42 +89,41 @@ bool substitute(term_t* term)
     {
         if (term->application.funct->type == abstraction)
         {
-            term_t* val = replace_param(term->application.funct->abstraction.param, term->application.funct, term->application.arg);    
-            if (val->type != null)
-            {
-                memmove(term, val->abstraction.body, sizeof(term_t));
-                term__free(val); // like this it DOESNT LEAK, but when freeing "val" while its *body is pointing at a term that has subterms, those subterms are freed too, therefore the newly copied term has dead pointers
-                // %p
-                return true;
-            }
+            term_t* val = term->application.funct;
+            if (replace_param(term->application.funct->abstraction.param, term->application.funct, term->application.arg) == NULL)
+                term__free(term->application.arg);
+
+            memmove(term, term->application.funct->abstraction.body, sizeof(term_t));
+            memset(val->abstraction.body, 0, sizeof(term_t));
+            //unhook_subterms(val->abstraction.body);
+            term__free(val); //[x] fixed leak and memory layout
+            return true;
+        }
+        else if (term->application.funct->type == application)
+        {
+            return substitute(term->application.funct);
         }
     }
     return false;
 }
 
-void beta_reduce(term_t* terms)
+bool beta_reduce(term_t* terms)
 {
+    printf(C_RGB_FG(0, 100, 200)"<start of beta-reduction>"C_RESET"\n");
+    bool reduction = false;
     if (!terms)
-        return;
+        return reduction;
 
-    //evec_t* evec = evec__new(sizeof(term_t));    
     term_t* t = terms;
     while (t->type != null)
     {
-        if (t->type == application)
+        if (substitute(t))
         {
-            if (substitute(t))
-            {
-                term__print(t, 0);
-            }
+            reduction = true;
+            term__print(t, 0);
         }
-        //evec__push(evec, t);
         ++t;
     }
-    /*term_t n = {0};
-    evec__push(evec, &n);
-    term_t* r = (term_t*)evec->data;
-    free(evec);*/
     printf(C_RGB_FG(0, 100, 200)"<end of beta-reduction>"C_RESET"\n");
-    return /*r*/;
+    return reduction;
 }

@@ -32,9 +32,14 @@ typedef struct term_t
     };
 } term_t;
 
+/*extern const term_t* _nt;
+#define nullterm ((void*)_nt)
+bool init_nullterm(void);*/
+
 void term__print(term_t* term, u16 level);
 void term__print_raw(term_t* term, u16 level);
-void term__free(term_t* term);
+char* term__to_string(term_t* term);
 void term__free_sub(term_t* term);
+void term__free(term_t* term);
 
 #endif //TERM.H

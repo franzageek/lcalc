@@ -56,7 +56,7 @@ term_t* parse_term(char* expr, u16* index)
                 if (!body)
                     return NULL;
 
-                term_t* term = malloc(sizeof(term_t));
+                term_t* term = calloc(1, sizeof(term_t));
                 if (!term)
                 {
                     term__free(body);
@@ -143,6 +143,7 @@ term_t* parse_term(char* expr, u16* index)
                 }
             }
         }
+        ++*index;
     }
     print_syntax_error(*index);
     fprintf(stderr, "incomplete expression (NUL reached)\n");
@@ -151,6 +152,7 @@ term_t* parse_term(char* expr, u16* index)
 
 term_t* parse(char* expr)
 {
+    //printf(C_RGB_FG(0, 100, 200)"<start of parsing phase>"C_RESET"\n");
     evec_t* evec = evec__new(sizeof(term_t));
     u16 i = 0;
     while (expr[i] != '\0')
@@ -158,9 +160,9 @@ term_t* parse(char* expr)
         term_t* t = parse_term(expr, &i);
         if (!t)
         {
-            u16 u = 0;
+            u16 u = 0;                          
             while (u < evec->size)
-                term__free_sub(((term_t*)evec__at(evec, u))); // free all subterms of each term inside the evec
+                term__free_sub(((term_t*)evec__at(evec, u++))); // free all subterms of each term inside the evec
 
             evec__free(evec);
             return NULL;
@@ -175,6 +177,6 @@ term_t* parse(char* expr)
     evec__push(evec, &n); // push null term to evec
     term_t* t = (term_t*)evec->data;
     free(evec); // drop evec, keep NULL-terminated term array
-    printf(C_RGB_FG(0, 100, 200)"<end of parsing phase>"C_RESET"\n");
+    //printf(C_RGB_FG(0, 100, 200)"<end of parsing phase>"C_RESET"\n");
     return t;
 }
