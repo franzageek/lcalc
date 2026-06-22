@@ -10,8 +10,8 @@
 
 int main(/*int argc, char** argv*/)
 {
-    linenoiseHistorySetMaxLen(10);
     printf("-- λ-expression parser, v0.1 --\n");
+    linenoiseHistorySetMaxLen(10);
     while (true)
     {
         char* line = linenoise("["C_GREEN"λ"C_RESET"] >>> ");
@@ -20,26 +20,37 @@ int main(/*int argc, char** argv*/)
             continue;
         
         if (strcmp(line, "quit") == 0)
-            return 0;
+            break;
 
-        linenoiseHistoryAdd(line);
-        printf("\n> %s\n", line);
-        term_t* t = parse(line);
+        u16 u = 0;
+        while (line[u++] == ' ');
+        --u;
+        if (line[u] == '\0')
+            continue;
+        
+
+        linenoiseHistoryAdd(&line[u]);
+        printf("\n> %s\n", &line[u]);
+        term_t* t = parse(&line[u]);
         term_t* a = t;
         if (t) 
         {
             do
             {
                 term__print(a, 0);
-                printf("--\n");
                 ++a;
             }
             while (a->type != null);
-            printf("\n\n\n");
-            beta_reduce(t);
+            if (beta_reduce(t))
+                printf("expression was reduced\n");
+
             a = t;
             while (a->type != null)
             {
+                char* str = term__to_string(a);
+                linenoiseHistoryAdd(str);
+                printf("--> %s\n", str);
+                free(str);
                 term__free_sub(a);
                 ++a;
             }
@@ -48,5 +59,5 @@ int main(/*int argc, char** argv*/)
         putc('\n', stdout);
         linenoiseFree(line);
     }
-    return 0;
+    exit(0);
 }
