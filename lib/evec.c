@@ -33,7 +33,7 @@ evec_t* evec__new(u16 size_bytes)
     return evec;
 }
 
-void evec__push(evec_t* evec, void* data)
+void _evec__push(evec_t* evec, void* data, char* _f, size_t _l)
 {
     if (evec->valid)
     {
@@ -50,7 +50,7 @@ void evec__push(evec_t* evec, void* data)
             memmove(new_data, evec->data, evec->capacity * evec->item_size);
             if (memcmp(new_data, evec->data, evec->capacity * evec->item_size) != 0)
             {
-                fprintf(stderr, "evec: an error occurred after memmove() call: source and destination do not match\n");
+                fprintf(stderr, "evec: an error occurred at \'%s:%zu\' after memmove() call: source and destination do not match\n", _f, _l);
                 evec__free(evec);
                 exit(EXIT_FAILURE);
             }
@@ -65,7 +65,7 @@ void evec__push(evec_t* evec, void* data)
         memmove(dest, data, evec->item_size);
         if (memcmp(data, dest, evec->item_size) != 0)
         {
-            fprintf(stderr, "evec: an error occurred after memmove() call: source and destination do not match\n");
+            fprintf(stderr, "evec: an error occurred at \'%s:%zu\' after memmove() call: source and destination do not match\n", _f, _l);
             evec__free(evec);
             exit(EXIT_FAILURE);
         }
@@ -80,7 +80,7 @@ void evec__push(evec_t* evec, void* data)
     }    
 }
 
-void* evec__at(evec_t* evec, u16 index)
+void* _evec__at(evec_t* evec, u16 index, char* _f, size_t _l)
 {
     if (evec->valid)
     {
@@ -89,14 +89,14 @@ void* evec__at(evec_t* evec, u16 index)
         
         else
         {
-            fprintf(stderr, "evec: an error occurred after evec__at(): attempt to read out of range\n");
+            fprintf(stderr, "evec: an error occurred at \'%s:%zu\' after evec__at() call: attempt to read out of range (index: %u, size: %u)\n", _f, _l, index, evec->size);
             evec__free(evec);
             exit(EXIT_FAILURE);
         }
     }
     else
     {
-        fprintf(stderr, "evec: an error occurred after evec__at(): called on an invalid evec\n");
+        fprintf(stderr, "evec: an error occurred at \'%s:%zu\' after evec__at() call: called on an invalid evec\n", _f, _l);
         exit(EXIT_FAILURE);
     }
 }

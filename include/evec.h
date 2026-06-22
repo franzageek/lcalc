@@ -13,46 +13,26 @@
 typedef struct _evec
 {
     u8* data;
-    u8 capacity;
-    u8 size;
-    u8 item_size;
+    u16 capacity;
+    u16 size;
+    u16 item_size;
     bool valid;
 } evec_t;
-
-/*
-void evec__stack_free(evec_t* evec)
-{
-    free(evec->data);
-    memset(evec, 0, sizeof(evec_t));
-    return;
-}
-
-evec_t evec__stack_new(u16 size_bytes)
-{
-    evec_t evec = {0};
-    u8* data = calloc(8, size_bytes);
-    if (!data)
-    {
-        perror("evec: calloc:");
-        exit(EXIT_FAILURE);
-    }
-
-    evec.data = data;
-    evec.capacity = 8;
-    evec.size = 0;
-    evec.item_size = size_bytes;
-    evec.valid = true;
-    data = NULL;
-    return evec;
-}
-*/
 
 void evec__free(evec_t* evec);
 
 evec_t* evec__new(u16 size_bytes);
 
-void evec__push(evec_t* evec, void* data);
+void _evec__push(evec_t* evec, void* data, char* _f, size_t _l);
 
-void* evec__at(evec_t* evec, u16 index);
+#ifndef evec__push
+#define evec__push(ptr_to_evec, ptr_to_data) _evec__push(ptr_to_evec, ptr_to_data, __FILE__, __LINE__)
+#endif
+
+void* _evec__at(evec_t* evec, u16 index, char* _f, size_t _l);
+
+#ifndef evec__at
+#define evec__at(ptr_to_evec, u16_index) _evec__at(ptr_to_evec, u16_index, __FILE__, __LINE__)
+#endif
 
 #endif
