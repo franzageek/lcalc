@@ -74,7 +74,39 @@ term_t* replace_param(char param, term_t* term, term_t* repl)
              
                 return term;
             }
-            return NULL;
+            break;
+        }
+
+        case application:
+        {
+            bool reduction = false;
+            term_t* val = replace_param(param, term->application.funct, repl);
+            
+            if (val == repl)
+            {
+                free(term->application.funct); //it is a variable
+                term->application.funct = repl;
+            }
+            if (val)
+                reduction = true;
+
+            val = replace_param(param, term->application.arg, repl);
+            
+            if (val == repl)
+            {
+                free(term->application.arg); //it is a variable
+                if (reduction)
+                    term->application.arg = term__duplicate(repl); //honestly i can't come up with a better solution than wasting double the memory here in order to avoid a double-free, but we'll see
+                else    
+                    term->application.arg = repl;
+            }
+            if (val)
+                reduction = true;
+
+            if (reduction) 
+                return term;
+
+            break;
         }
 
         default:

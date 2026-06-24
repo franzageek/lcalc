@@ -5,20 +5,6 @@
 #include <stdio.h>
 #include <string.h>
 
-//const term_t* _nt;
-
-/*bool init_nullterm(void)
-{
-    _nt = calloc(1, sizeof(term_t));
-    if (!_nt)
-    {
-        perror("calloc:");
-        return false;
-    }
-
-    return true;
-}*/
-
 void term__print_raw(term_t* term, u16 level)
 {
     level *= 2;
@@ -143,6 +129,65 @@ char* term__to_string(term_t* term)
     }
 }
 
+term_t* term__duplicate(term_t *term)
+{
+    if (!term)
+    {
+        //should never happen since we're in control of what goes in here,
+        //easier than handling the error all the way up the call stack.
+        fprintf(stderr, "lcalc: term__duplicate(): invalid term provided\n");
+        exit(1);
+    }
+
+    switch (term->type)
+    {
+        case null:
+        case variable:
+        {
+            term_t* dup = malloc(sizeof(term_t));
+            if (!dup)
+            {
+                perror("malloc:");
+                exit(1);
+            }
+            memcpy(dup, term, sizeof(term_t));
+            return dup;
+        }
+
+        case abstraction:
+        {
+            term_t* dup_body = term__duplicate(term->abstraction.body);
+            term_t* dup = malloc(sizeof(term_t));
+            if (!dup)
+            {
+                perror("malloc:");
+                exit(1);
+            }
+            dup->type = abstraction;
+            dup->abstraction.param = term->abstraction.param;
+            dup->abstraction.body = dup_body;
+            return dup;
+        }
+
+        case application:
+        {
+            term_t* dup_funct = term__duplicate(term->application.funct);
+            term_t* dup_arg = term__duplicate(term->application.arg);
+            term_t* dup = malloc(sizeof(term_t));
+            if (!dup)
+            {
+                perror("malloc:");
+                exit(1);
+            }
+            dup->type = application;
+            dup->application.funct = dup_funct;
+            dup->application.arg = dup_arg;
+            return dup;
+        }
+    }
+    return NULL; //technically unreachable
+}
+
 void term__free_sub(term_t* term)
 {
     if (!term)
@@ -172,7 +217,6 @@ void term__free_sub(term_t* term)
 void term__free(term_t* term)
 {
     term__free_sub(term);
-    //if (term != nullterm)
     free(term);
         
     return;
