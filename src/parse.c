@@ -33,6 +33,13 @@ term_t* parse_term(char* expr, u16* index)
                 ++*index;
                 if (expr[*index] < 'a' || expr[*index] > 'z')
                 {
+                    if (expr[*index] == '\0')
+                    {
+                        print_syntax_error(*index);
+                        fprintf(stderr, "missing parameter name\n");
+                        return NULL;
+                    }
+
                     print_syntax_error(*index);
                     fprintf(stderr, "invalid parameter name: \'%c\'\n", expr[*index]);
                     return NULL;
@@ -77,22 +84,31 @@ term_t* parse_term(char* expr, u16* index)
                 if (!funct)
                     return NULL;
                 
-                if (expr[*index] == '\0')
+                if (expr[*index] == '\0' || expr[*index] == ')')
                 {
                     print_syntax_error(*index);
-                    fprintf(stderr, "incomplete expression (NUL reached)\n");
+                    fprintf(stderr, "application argument is missing\n");
                     term__free(funct);
                     return NULL;
                 }
 
                 if (expr[*index] != ' ')
-                {
+                {   
                     print_syntax_error(*index);
-                    fprintf(stderr, "space expected between function and argument(s)\n");
+                    fprintf(stderr, "space expected between function and argument\n");
                     term__free(funct);
                     return NULL;
                 }
                 ++*index;
+
+                if (expr[*index] == '\0' || expr[*index] == ')')
+                {
+                    print_syntax_error(*index);
+                    fprintf(stderr, "application argument is missing\n");
+                    term__free(funct);
+                    return NULL;
+                }
+
                 term_t* arg = parse_term(expr, index);
                 if (!arg)
                 {
@@ -152,11 +168,16 @@ term_t* parse_term(char* expr, u16* index)
 
 term_t* parse(char* expr)
 {
-    //printf(C_RGB_FG(0, 100, 200)"<start of parsing phase>"C_RESET"\n");
     evec_t* evec = evec__new(sizeof(term_t));
     u16 i = 0;
     while (expr[i] != '\0')
     {
+        if (expr[i] == ' ')
+        {
+            ++i;
+            continue;
+        }
+
         term_t* t = parse_term(expr, &i);
         if (!t)
         {
@@ -169,14 +190,11 @@ term_t* parse(char* expr)
         }
         
         evec__push(evec, t); // [x] temporary setup, do stable
-        //term__print_raw(t, 0);
-        //printf("--\n");
         free(t); // copy term to evec, preserve children, free term
     }
     term_t n = {0};
     evec__push(evec, &n); // push null term to evec
     term_t* t = (term_t*)evec->data;
     free(evec); // drop evec, keep NULL-terminated term array
-    //printf(C_RGB_FG(0, 100, 200)"<end of parsing phase>"C_RESET"\n");
     return t;
 }
